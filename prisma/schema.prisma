@@ -1,0 +1,126 @@
+datasource db {
+  provider = "postgresql"  // Change this to "mysql" or "sqlite" if you're using a different DB
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  email         String    @unique
+  password      String
+  name          String?
+  bio           String?
+  website       String?
+  image         String?
+  isPrivate     Boolean   @default(false)
+  posts         Post[]
+  stories       Story[]
+  followers     Follow[]  @relation("Followers")
+  following     Follow[]  @relation("Following")
+  likes         Like[]
+  comments      Comment[]
+  savedPosts    SavedPost[]
+  taggedInPosts PostTag[]
+  blockedUsers  BlockedUser[] @relation("Blocker")
+  blockedBy     BlockedUser[] @relation("Blocked")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Post {
+  id          String     @id @default(uuid())
+  caption     String?
+  location    String?
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  images      PostImage[]
+  likes       Like[]
+  comments    Comment[]
+  savedBy     SavedPost[]
+  taggedUsers PostTag[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model PostImage {
+  id        String   @id @default(uuid())
+  url       String
+  order     Int
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Story {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now())
+  @@unique([userId, postId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  follower    User     @relation(fields: [followerId], references: [id], name: "Followers")
+  following   User     @relation(fields: [followingId], references: [id], name: "Following")
+  createdAt   DateTime @default(now())
+  @@id([followerId, followingId])
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now())
+  @@unique([userId, postId])
+}
+
+model PostTag {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+  createdAt DateTime @default(now())
+  @@unique([userId, postId])
+}
+
+model BlockedUser {
+  id          String   @id @default(uuid())
+  blockerId   String
+  blockedId   String
+  blocker     User     @relation("Blocker", fields: [blockerId], references: [id])
+  blocked     User     @relation("Blocked", fields: [blockedId], references: [id])
+  createdAt   DateTime @default(now())
+  @@unique([blockerId, blockedId])
+}
